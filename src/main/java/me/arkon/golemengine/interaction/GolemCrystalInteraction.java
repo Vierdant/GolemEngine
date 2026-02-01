@@ -5,10 +5,14 @@ import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.util.ChunkUtil;
+import com.hypixel.hytale.math.vector.Vector3d;
+import com.hypixel.hytale.math.vector.Vector3f;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.protocol.InteractionState;
 import com.hypixel.hytale.protocol.InteractionType;
+import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
+import com.hypixel.hytale.server.core.command.system.exceptions.GeneralCommandException;
 import com.hypixel.hytale.server.core.entity.InteractionContext;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
@@ -19,9 +23,18 @@ import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.hypixel.hytale.server.npc.NPCPlugin;
+import com.hypixel.hytale.server.npc.asset.builder.Builder;
+import com.hypixel.hytale.server.npc.asset.builder.BuilderInfo;
+import com.hypixel.hytale.server.npc.entities.NPCEntity;
+import com.hypixel.hytale.server.npc.role.Role;
+import com.hypixel.hytale.server.spawning.ISpawnableWithModel;
+import com.hypixel.hytale.server.spawning.SpawningContext;
+import it.unimi.dsi.fastutil.Pair;
 import me.arkon.golemengine.GolemEngine;
 import me.arkon.golemengine.component.AnchorMonitorComponent;
 import me.arkon.golemengine.component.AnchorStateComponent;
+import me.arkon.golemengine.component.GolemActionComponent;
 import me.arkon.golemengine.util.AnchorState;
 
 import javax.annotation.Nonnull;
@@ -109,9 +122,50 @@ public class GolemCrystalInteraction extends SimpleInstantInteraction {
         context.getHeldItemContainer().removeItemStackFromSlot(context.getHeldItemSlot(), context.getHeldItem(), 1);
 
         commandBuffer.run(entityStore -> {
+            spawnGolemAtAnchor(context, monitor);
             store.removeComponent(player.getReference(), AnchorMonitorComponent.getComponentType());
             anchorState.state = AnchorState.ACTIVE;
             GolemEngine.LOGGER.atInfo().log("ACTIVATED!");
         });
+    }
+
+    private void spawnGolemAtAnchor(InteractionContext context, AnchorMonitorComponent monitor) {
+        NPCPlugin npcPlugin = NPCPlugin.get();
+        Store<EntityStore> store = context.getEntity().getStore();
+
+        int roleBuilderIndex = npcPlugin.getIndex("Golem_Construct");
+        BuilderInfo roleInfo = npcPlugin.getRoleBuilderInfo(roleBuilderIndex);
+        if (roleInfo == null) {
+            GolemEngine.LOGGER.atSevere().log("Golem failed to spawn due to invalid role info fetch.");
+            return;
+        }
+        Builder<Role> roleBuilder = npcPlugin.tryGetCachedValidRole(roleInfo.getIndex());
+
+        if (!(roleBuilder instanceof ISpawnableWithModel spawnable) || !roleBuilder.isSpawnable()) {
+            throw new IllegalStateException("Golem role is not spawnable");
+        }
+
+        SpawningContext spawningContext = new SpawningContext();
+        if (!spawningContext.setSpawnable(spawnable)) {
+            throw new GeneralCommandException(Message.translation("server.commands.npc.spawn.cantSetRolebuilder"));
+        }
+
+        Vector3d position = new Vector3d(monitor.getAnchorLocation());
+        position.y += 0.5;
+
+        Pair<Ref<EntityStore>, NPCEntity> npcPair =
+                npcPlugin.spawnEntity(
+                        store,
+                        roleBuilderIndex,
+                        position,
+                        new Vector3f(),
+                        spawningContext.getModel(),
+                        null
+                );
+
+        assert npcPair != null;
+        Ref<EntityStore> golemRef = npcPair.first();
+
+        store.addComponent(golemRef, GolemActionComponent.getComponentType(), new GolemActionComponent(monitor.actions));
     }
 }

@@ -6,15 +6,19 @@ import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import me.arkon.golemengine.action.GolemAction;
+
+import java.util.ArrayList;
 
 public class AnchorMonitorComponent implements Component<EntityStore> {
     public static final BuilderCodec<AnchorMonitorComponent> CODEC;
     public static ComponentType<EntityStore, AnchorMonitorComponent> TYPE;
 
     private final Vector3i anchorLocation;
+    public final ArrayList<GolemAction> actions = new ArrayList<>();
     public int tick = 0;
+    public int ticksSinceLastAction = 0;
     public Vector3d lastPosition;
-    public int RECORD_INTERVAL = 3;
 
     public AnchorMonitorComponent() {
         this.anchorLocation = null;
@@ -25,22 +29,6 @@ public class AnchorMonitorComponent implements Component<EntityStore> {
         this.anchorLocation = loc;
     }
 
-
-    public boolean hasMoved(Vector3d position) {
-        // returns true if player moved
-        if (lastPosition == null) {
-            lastPosition = new Vector3d(position);
-            return true;
-        }
-
-        double minDistance = 0.5;
-        boolean moved = position.distanceSquaredTo(lastPosition) > (minDistance * minDistance);
-
-        if (moved) {
-            lastPosition = new Vector3d(position);
-        }
-        return moved;
-    }
 
     public Vector3i getAnchorLocation() {
         return anchorLocation;
