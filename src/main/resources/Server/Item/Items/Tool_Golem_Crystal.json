@@ -1,0 +1,32 @@
+{
+  "Icon": "Icons/ItemsGenerated/Tool_Golem_Crystal.png",
+  "IconProperties": {
+    "Scale": 0.6,
+    "Rotation": [
+      22.5,
+      45,
+      22.5
+    ],
+    "Translation": [
+      0,
+      -6
+    ]
+  },
+  "TranslationProperties": {
+    "Name": "server.items.Golem_Crystal.name",
+    "Description": "server.items.Golem_Crystal.description"
+  },
+  "BlockType": {
+    "CustomModel": "Blocks/Tool_Golem_Crystal.blockymodel",
+    "CustomModelTexture": [
+      {
+        "Texture": "BlockTextures/Tool_Golem_Crystal.png",
+        "Weight": 1
+      }
+    ],
+    "DrawType": "Model"
+  },
+  "Interactions": {
+    "Secondary": "Tool_Golem_Crystal"
+  }
+}

@@ -1,0 +1,5 @@
+items.Example_Block.name=Example Block
+items.Golem_Anchor.name=Golem Anchor
+items.Golem_Anchor.description=Last remaining echo of a forgotton civlization, used to schedule golem actions and give them purpose
+items.Golem_Crystal.name=Golem Crystal
+items.Golem_Crystal.description=A temporary item that, when in player's inventory, records actions and transmits them to a related Golem Anchor

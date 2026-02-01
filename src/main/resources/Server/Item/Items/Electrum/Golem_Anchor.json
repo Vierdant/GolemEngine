@@ -1,0 +1,109 @@
+{
+  "TranslationProperties": {
+    "Name": "server.items.Golem_Anchor.name",
+    "Description": "server.items.Golem_Anchor.description"
+  },
+  "Categories": [
+    "Blocks.Structural"
+  ],
+  "Interactions": {
+    "Primary": "Block_Primary",
+    "Secondary": "Block_Secondary"
+  },
+  "BlockType": {
+    "Material": "Solid",
+    "DrawType": "Model",
+    "Opacity": "Transparent",
+    "CustomModel": "Blocks/Golem_Anchor.blockymodel",
+    "CustomModelTexture": [
+      {
+        "Texture": "BlockTextures/Golem_Anchor.png",
+        "Weight": 1
+      }
+    ],
+    "HitboxType": "Block_Half",
+    "VariantRotation": "NESW",
+    "Flags": {},
+    "Gathering": {
+      "Breaking": {
+        "GatherType": "Woods"
+      }
+    },
+    "BlockParticleSetId": "Stone",
+    "MaxSupportDistance": 8,
+    "Support": {
+      "Down": [
+        {
+          "FaceType": "Full"
+        },
+        {
+          "FaceType": "Shelf",
+          "Support": "Ignored"
+        },
+        {
+          "FaceType": "Shelf",
+          "SelfFaceType": "Shelf"
+        }
+      ],
+      "Up": [
+        {
+          "FaceType": "Full"
+        },
+        {
+          "FaceType": "Shelf",
+          "Support": "Ignored"
+        },
+        {
+          "FaceType": "Shelf",
+          "SelfFaceType": "Shelf"
+        }
+      ],
+      "North": [
+        {
+          "FaceType": "Full"
+        }
+      ]
+    },
+    "Supporting": {
+      "Up": [
+        {
+          "FaceType": "Shelf"
+        }
+      ]
+    },
+    "ParticleColor": "#5f5e5e",
+    "BlockSoundSetId": "Stone",
+    "CubeShadingMode": "Standard",
+    "Interactions": {
+      "Use": "Golem_Anchor"
+    },
+    "BlockEntity": {
+      "Components": {
+        "GolemEngine_AnchorState": {}
+      }
+    }
+  },
+  "PlayerAnimationsId": "Block",
+  "IconProperties": {
+    "Scale": 0.55,
+    "Rotation": [
+      22.5,
+      45,
+      22.5
+    ],
+    "Translation": [
+      1.2,
+      -15
+    ]
+  },
+  "Icon": "Icons/ItemsGenerated/Golem_Anchor.png",
+  "Tags": {
+    "Type": [
+      "Furniture"
+    ],
+    "Family": [
+      "Human"
+    ]
+  },
+  "ItemSoundSetId": "ISS_Blocks_Stone"
+}
