@@ -7,7 +7,9 @@ import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
 import com.hypixel.hytale.math.vector.Vector3d;
+import com.hypixel.hytale.protocol.MovementStates;
 import com.hypixel.hytale.server.core.entity.entities.Player;
+import com.hypixel.hytale.server.core.entity.movement.MovementStatesComponent;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import me.arkon.golemengine.GolemEngine;
@@ -44,7 +46,9 @@ public class AnchorMonitorSystem extends EntityTickingSystem<EntityStore> {
         monitor.tick = 0;
 
         TransformComponent transform = store.getComponent(player.getReference(), TransformComponent.getComponentType());
-        if (transform == null) return;
+        MovementStatesComponent movementStates = store.getComponent(player.getReference(), MovementStatesComponent.getComponentType());
+
+        if (transform == null || movementStates == null) return;
         Vector3d currentPos = transform.getPosition();
 
         if (monitor.lastPosition == null) {
@@ -52,14 +56,25 @@ public class AnchorMonitorSystem extends EntityTickingSystem<EntityStore> {
             return;
         }
 
-        Vector3d location = currentPos.clone();
+        double MOVE_THRESHOLD_SQ = 5.0;
 
-        if (location.distanceSquaredTo(monitor.lastPosition) > (5 * 5)) {
-            ActionUtil.flushWaitAction(monitor);
-            monitor.actions.add(new MoveAction(location, transform.getTransform().getDirection()));
-            monitor.lastPosition = new Vector3d(location);
-            GolemEngine.LOGGER.atInfo().log("Player has moved! New location: " + currentPos.x + " " + currentPos.y + " " + currentPos.z);
+        Vector3d location = currentPos.clone();
+        MovementStates movement = movementStates.getMovementStates();
+        boolean isMoving = !movement.idle && !movement.horizontalIdle && !movement.sitting;
+
+
+        if (isMoving) {
+            if (location.distanceSquaredTo(monitor.lastPosition) > MOVE_THRESHOLD_SQ) {
+                MoveAction moveAction = new MoveAction(new Vector3d(location), transform.getTransform().getDirection());
+                monitor.actions.add(moveAction);
+                monitor.lastPosition.assign(location);
+                monitor.ticksSinceLastAction = 0;
+            }
+
+            return;
         }
+
+        ActionUtil.flushWaitAction(monitor);
     }
 
     @Nullable

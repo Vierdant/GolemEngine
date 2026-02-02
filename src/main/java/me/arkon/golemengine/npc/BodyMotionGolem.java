@@ -16,6 +16,8 @@ import com.hypixel.hytale.server.npc.role.Role;
 import com.hypixel.hytale.server.npc.sensorinfo.InfoProvider;
 import com.hypixel.hytale.server.npc.util.NPCPhysicsMath;
 import me.arkon.golemengine.GolemEngine;
+import me.arkon.golemengine.action.GolemAction;
+import me.arkon.golemengine.action.MoveAction;
 import me.arkon.golemengine.component.GolemActionComponent;
 import org.jetbrains.annotations.NotNull;
 
@@ -134,9 +136,7 @@ public class BodyMotionGolem extends BodyMotionFind {
         if (!(differenceY < this.heightDifferenceMin) && !(differenceY > this.heightDifferenceMax)) {
             boolean reached = !(motionController.waypointDistanceSquared(position, targetPosition) > this.effectiveDistanceSquared) && (!this.reachable || this.canReachTarget(ref, motionController, position, targetPosition, componentAccessor));
             if (this.containsPosition(transform.getPosition(), targetPosition)) {
-                golem.moving = false;
-                golem.target = new Vector3d();
-                golem.direction = new Vector3d();
+                this.advanceMoveChain(golem);
             }
             return reached;
         } else {
@@ -162,14 +162,30 @@ public class BodyMotionGolem extends BodyMotionFind {
         );
     }
 
-    public boolean containsPosition(@Nonnull Vector3d position, @Nonnull Vector3d endPosition) {
-        return containsPosition(position.x, this.selfBoundingBox.min.x, this.selfBoundingBox.max.x, endPosition.x)
-                && containsPosition(position.y, this.selfBoundingBox.min.y, this.selfBoundingBox.max.y, endPosition.y)
-                && containsPosition(position.z, this.selfBoundingBox.min.z, this.selfBoundingBox.max.z, endPosition.z);
+    public void advanceMoveChain(GolemActionComponent golem) {
+        int nextIndex = golem.actionIndex + 1;
+
+        if (nextIndex >= golem.actions.size()) {
+            stopMoving(golem);
+            golem.actionIndex = 0;
+            return;
+        }
+
+        GolemAction next = golem.actions.get(nextIndex);
+
+        if (next instanceof MoveAction(Vector3d location, Vector3d direction)) {
+            golem.target.assign(location);
+            golem.direction.assign(direction);
+            golem.moving = true;
+        } else {
+            stopMoving(golem);
+        }
+
+        golem.actionIndex++;
     }
 
-    public static boolean containsPosition(double p, double min, double max, double v) {
-        v -= p;
-        return v >= min && v < max;
+
+    public void stopMoving(GolemActionComponent golem) {
+        golem.moving = false;
     }
 }

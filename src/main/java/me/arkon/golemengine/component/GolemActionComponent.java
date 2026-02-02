@@ -16,6 +16,7 @@ public class GolemActionComponent implements Component<EntityStore> {
     public final ArrayList<GolemAction> actions;
     public int waitTicks;
     public int actionIndex;
+    public int activeMoveIndex;
     public boolean moving;
     public Vector3d target;
     public Vector3d direction;
@@ -23,6 +24,7 @@ public class GolemActionComponent implements Component<EntityStore> {
     public GolemActionComponent() {
         this.actions = new ArrayList<>();
         this.waitTicks = 0;
+        this.activeMoveIndex = 0;
         this.actionIndex = 0;
         this.moving = false;
         this.target = new Vector3d();
@@ -34,6 +36,7 @@ public class GolemActionComponent implements Component<EntityStore> {
         this.actions = actions;
         this.waitTicks = 0;
         this.actionIndex = 0;
+        this.activeMoveIndex = 0;
         this.moving = false;
         this.target = new Vector3d();
         this.direction = new Vector3d();
@@ -43,6 +46,7 @@ public class GolemActionComponent implements Component<EntityStore> {
         this.actions = actions;
         this.waitTicks = waitTicks;
         this.actionIndex = actionIndex;
+        this.activeMoveIndex = 0;
         this.moving = false;
         this.target = new Vector3d();
         this.direction = new Vector3d();

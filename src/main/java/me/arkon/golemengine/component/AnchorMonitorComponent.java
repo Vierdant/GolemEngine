@@ -19,6 +19,7 @@ public class AnchorMonitorComponent implements Component<EntityStore> {
     public int tick = 0;
     public int ticksSinceLastAction = 0;
     public Vector3d lastPosition;
+    public boolean wasMoving;
 
     public AnchorMonitorComponent() {
         this.anchorLocation = null;

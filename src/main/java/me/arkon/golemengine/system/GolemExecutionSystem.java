@@ -57,10 +57,11 @@ public class GolemExecutionSystem extends EntityTickingSystem<EntityStore> {
         GolemAction action = golem.actions.get(golem.actionIndex);
 
         if (action instanceof MoveAction(Vector3d location, Vector3d direction)) {
-            GolemEngine.LOGGER.atInfo().log("MOVE ACTION SENT");
             golem.moving = true;
             golem.target = location;
             golem.direction = direction;
+            return;
+
         } else if (action instanceof WaitAction(int ticks)) {
             golem.waitTicks = ticks;
         }

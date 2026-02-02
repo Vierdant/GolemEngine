@@ -131,7 +131,9 @@ public class GolemAnchorInteraction extends SimpleBlockInteraction {
         }
 
         if (anchorStateComponent.state == AnchorState.ACTIVE) {
-            GolemEngine.LOGGER.atInfo().log("THIS IS ACTIVE! OPERATION WAS COMPLETED!");
+            GolemEngine.LOGGER.atInfo().log("THIS IS ACTIVE!");
+            // toggle golem execution tick
+            // if crouched reset golem to anchor location
         }
     }
 
