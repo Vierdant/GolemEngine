@@ -2,7 +2,9 @@ package me.arkon.golemengine.action;
 
 public enum GolemActionTypes {
     WAIT("wait"),
-    MOVE("move");
+    MOVE("move"),
+    BLOCK("block"),
+    INTERACT("interact");
 
     private final String key;
 

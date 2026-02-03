@@ -105,5 +105,21 @@
       "Human"
     ]
   },
-  "ItemSoundSetId": "ISS_Blocks_Stone"
+  "ItemSoundSetId": "ISS_Blocks_Stone",
+  "Recipe": {
+    "Input": [
+      {
+        "ItemId": "Ingredient_Life_Essence",
+        "Quantity": 5
+      }
+    ],
+    "BenchRequirement": [
+      {
+        "Id": "Arcanebench",
+        "Categories": [
+          "Arcane_Misc"
+        ]
+      }
+    ]
+  }
 }

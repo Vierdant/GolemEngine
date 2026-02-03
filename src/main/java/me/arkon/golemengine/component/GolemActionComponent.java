@@ -8,6 +8,8 @@ import com.hypixel.hytale.component.Component;
 import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3i;
+import com.hypixel.hytale.server.core.asset.type.item.config.Item;
+import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import me.arkon.golemengine.action.GolemAction;
 import me.arkon.golemengine.action.GolemActionCodec;
@@ -20,19 +22,23 @@ public class GolemActionComponent implements Component<EntityStore> {
     public static ComponentType<EntityStore, GolemActionComponent> TYPE;
 
     public final ArrayList<GolemAction> actions;
+    public ArrayList<ItemStack> inventory;
     public Vector3i anchorLocation;
     public int waitTicks;
     public int actionIndex;
     public int activeMoveIndex;
+    public int preventPickupTicks;
     public boolean moving;
     public Vector3d target;
 
     public GolemActionComponent() {
         this.actions = new ArrayList<>();
+        this.inventory = new ArrayList<>();
         this.anchorLocation = Vector3i.ZERO;
         this.waitTicks = 0;
         this.activeMoveIndex = 0;
         this.actionIndex = 0;
+        this.preventPickupTicks = 0;
         this.moving = false;
         this.target = new Vector3d();
 
@@ -40,30 +46,36 @@ public class GolemActionComponent implements Component<EntityStore> {
 
     public GolemActionComponent(ArrayList<GolemAction> actions) {
         this.actions = actions;
+        this.inventory = new ArrayList<>();
         this.anchorLocation = Vector3i.ZERO;
         this.waitTicks = 0;
         this.actionIndex = 0;
         this.activeMoveIndex = 0;
+        this.preventPickupTicks = 0;
         this.moving = false;
         this.target = new Vector3d();
     }
 
     public GolemActionComponent(ArrayList<GolemAction> actions, Vector3i anchorLocation) {
         this.actions = actions;
+        this.inventory = new ArrayList<>();
         this.anchorLocation = anchorLocation;
         this.waitTicks = 0;
         this.actionIndex = 0;
         this.activeMoveIndex = 0;
+        this.preventPickupTicks = 0;
         this.moving = false;
         this.target = new Vector3d();
     }
 
-    public GolemActionComponent(ArrayList<GolemAction> actions, Vector3i anchorLocation, int waitTicks, int actionIndex) {
+    public GolemActionComponent(ArrayList<GolemAction> actions, Vector3i anchorLocation, ArrayList<ItemStack> inventory, int waitTicks, int actionIndex) {
         this.actions = actions;
+        this.inventory = inventory;
         this.anchorLocation = anchorLocation;
         this.waitTicks = waitTicks;
         this.actionIndex = actionIndex;
         this.activeMoveIndex = 0;
+        this.preventPickupTicks = 0;
         this.moving = false;
         this.target = new Vector3d();
     }
@@ -78,7 +90,7 @@ public class GolemActionComponent implements Component<EntityStore> {
             super.clone();
         } catch (CloneNotSupportedException _) {}
 
-        return new GolemActionComponent(this.actions, this.anchorLocation, this.waitTicks, this.actionIndex);
+        return new GolemActionComponent(this.actions, this.anchorLocation, this.inventory, this.waitTicks, this.actionIndex);
     }
 
 
@@ -90,6 +102,14 @@ public class GolemActionComponent implements Component<EntityStore> {
                         ),
                         (c, v) -> c.actions.addAll(List.of(v)),
                         c -> c.actions.toArray(GolemAction[]::new)
+                )
+                .add()
+                .append(
+                        new KeyedCodec<>("Inventory",
+                                new ArrayCodec<>(ItemStack.CODEC, ItemStack[]::new)
+                        ),
+                        (c, v) -> c.inventory.addAll(List.of(v)),
+                        c -> c.inventory.toArray(ItemStack[]::new)
                 )
                 .add()
                 .append(

@@ -5,10 +5,12 @@ import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3f;
+import com.hypixel.hytale.protocol.InteractionType;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.exceptions.GeneralCommandException;
 import com.hypixel.hytale.server.core.entity.InteractionContext;
 import com.hypixel.hytale.server.core.entity.UUIDComponent;
+import com.hypixel.hytale.server.core.modules.interaction.Interactions;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
@@ -26,6 +28,7 @@ import me.arkon.golemengine.component.AnchorComponent;
 import me.arkon.golemengine.component.GolemActionComponent;
 import me.arkon.golemengine.interaction.GolemAnchorInteraction;
 import me.arkon.golemengine.interaction.GolemCrystalInteraction;
+import me.arkon.golemengine.interaction.GolemEntityInteraction;
 import me.arkon.golemengine.npc.BuilderBodyMotionGolem;
 import me.arkon.golemengine.system.AnchorMonitorSystem;
 import me.arkon.golemengine.system.BreakBlockSystem;
@@ -51,6 +54,7 @@ public class GolemEngine extends JavaPlugin {
         GolemActionComponent.TYPE = this.getEntityStoreRegistry().registerComponent(GolemActionComponent.class, "GolemEngine_GolemAction", GolemActionComponent.CODEC);
 
         this.getCodecRegistry(Interaction.CODEC).register("UseGolemCrystal", GolemCrystalInteraction.class, GolemCrystalInteraction.CODEC);
+        this.getCodecRegistry(Interaction.CODEC).register("UseGolemEntity", GolemEntityInteraction.class, GolemEntityInteraction.CODEC);
 
         NPCPlugin.get().registerCoreComponentType("GolemAction", BuilderBodyMotionGolem::new);
 
@@ -109,6 +113,10 @@ public class GolemEngine extends JavaPlugin {
         Ref<EntityStore> golemRef = npcPair.first();
 
         store.addComponent(golemRef, GolemActionComponent.getComponentType(), new GolemActionComponent(monitor.actions, monitor.getAnchorLocation()));
+
+        Interactions interactions = new Interactions();
+        interactions.setInteractionId(InteractionType.Use, "Golem_Entity");
+        store.replaceComponent(golemRef, Interactions.getComponentType(), interactions);
         UUIDComponent uuid = store.getComponent(golemRef, UUIDComponent.getComponentType());
         if (uuid == null) return;
 

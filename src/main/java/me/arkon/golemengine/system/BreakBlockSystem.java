@@ -12,6 +12,7 @@ import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import me.arkon.golemengine.GolemEngine;
+import me.arkon.golemengine.action.BlockAction;
 import me.arkon.golemengine.component.PlayerMonitorComponent;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -46,8 +47,13 @@ public class BreakBlockSystem extends EntityEventSystem<EntityStore, BreakBlockE
 
         if (!Objects.equals(blockType.getId(), "Empty")) {
             GolemEngine.LOGGER.atInfo().log("Player destroyed a " + blockType.getId());
+            monitor.actions.add(new BlockAction(event.getTargetBlock(), event.getBlockType().getId(), false));
         } else {
-            GolemEngine.LOGGER.atInfo().log("Player placed a " + blockType.getId());
+            world.performBlockUpdate(event.getTargetBlock().x, event.getTargetBlock().y, event.getTargetBlock().z);
+            blockType = world.getBlockType(event.getTargetBlock());
+            if (blockType != null) {
+                monitor.actions.add(new BlockAction(event.getTargetBlock(), blockType.getId(), true));
+            }
         }
     }
 

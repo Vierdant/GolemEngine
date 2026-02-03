@@ -20,13 +20,17 @@ public class GolemActionCodec implements Codec<GolemAction> {
     private static final Map<GolemActionTypes, BuilderCodec<? extends GolemAction>> BY_TYPE =
             Map.of(
                     GolemActionTypes.MOVE, MoveAction.CODEC,
-                    GolemActionTypes.WAIT, WaitAction.CODEC
+                    GolemActionTypes.WAIT, WaitAction.CODEC,
+                    GolemActionTypes.BLOCK, BlockAction.CODEC,
+                    GolemActionTypes.INTERACT, InteractAction.CODEC
             );
 
     private static final Map<Class<?>, BuilderCodec<? extends GolemAction>> BY_CLASS =
             Map.of(
                     MoveAction.class, MoveAction.CODEC,
-                    WaitAction.class, WaitAction.CODEC
+                    WaitAction.class, WaitAction.CODEC,
+                    BlockAction.class, BlockAction.CODEC,
+                    InteractAction.class, InteractAction.CODEC
             );
 
 
@@ -62,10 +66,11 @@ public class GolemActionCodec implements Codec<GolemAction> {
 
     @Override
     public @NotNull Schema toSchema(@NotNull SchemaContext context) {
-        // Union schema (editor-friendly)
         return Schema.anyOf(
                 MoveAction.CODEC.toSchema(context),
-                WaitAction.CODEC.toSchema(context)
+                WaitAction.CODEC.toSchema(context),
+                BlockAction.CODEC.toSchema(context),
+                InteractAction.CODEC.toSchema(context)
         );
     }
 }
