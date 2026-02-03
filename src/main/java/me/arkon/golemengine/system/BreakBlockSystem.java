@@ -12,7 +12,7 @@ import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import me.arkon.golemengine.GolemEngine;
-import me.arkon.golemengine.component.AnchorMonitorComponent;
+import me.arkon.golemengine.component.PlayerMonitorComponent;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -41,7 +41,7 @@ public class BreakBlockSystem extends EntityEventSystem<EntityStore, BreakBlockE
         BlockType blockType = world.getBlockType(event.getTargetBlock());
         if (blockType == null) return;
 
-        AnchorMonitorComponent monitor = store.getComponent(player.getReference(), AnchorMonitorComponent.getComponentType());
+        PlayerMonitorComponent monitor = store.getComponent(player.getReference(), PlayerMonitorComponent.getComponentType());
         if (monitor == null) return;
 
         if (!Objects.equals(blockType.getId(), "Empty")) {
@@ -53,6 +53,6 @@ public class BreakBlockSystem extends EntityEventSystem<EntityStore, BreakBlockE
 
     @Override
     public @Nullable Query<EntityStore> getQuery() {
-        return Query.and(Player.getComponentType(), AnchorMonitorComponent.getComponentType());
+        return Query.and(Player.getComponentType(), PlayerMonitorComponent.getComponentType());
     }
 }

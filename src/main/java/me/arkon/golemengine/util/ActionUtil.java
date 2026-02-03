@@ -1,16 +1,14 @@
 package me.arkon.golemengine.util;
 
-import me.arkon.golemengine.GolemEngine;
 import me.arkon.golemengine.action.GolemAction;
 import me.arkon.golemengine.action.WaitAction;
-import me.arkon.golemengine.component.AnchorMonitorComponent;
-import me.arkon.golemengine.component.GolemActionComponent;
+import me.arkon.golemengine.component.PlayerMonitorComponent;
 
 import java.util.ArrayList;
 
 public class ActionUtil {
 
-    public static void flushWaitAction(AnchorMonitorComponent monitor) {
+    public static void flushWaitAction(PlayerMonitorComponent monitor) {
         int ticks = monitor.ticksSinceLastAction;
         if (ticks <= 0) return;
 
@@ -18,8 +16,8 @@ public class ActionUtil {
 
         if (!actions.isEmpty()) {
             GolemAction last = actions.getLast();
-            if (last instanceof WaitAction(int waitTicks)) {
-                WaitAction updatedWait = new WaitAction(waitTicks + ticks);
+            if (last instanceof WaitAction waitAction) {
+                WaitAction updatedWait = new WaitAction(waitAction.getTicks() + ticks);
                 actions.set(actions.lastIndexOf(last), updatedWait);
                 monitor.ticksSinceLastAction = 0;
                 return;

@@ -1,12 +1,28 @@
 package me.arkon.golemengine;
 
+import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.logger.HytaleLogger;
+import com.hypixel.hytale.math.vector.Vector3d;
+import com.hypixel.hytale.math.vector.Vector3f;
+import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.server.core.command.system.exceptions.GeneralCommandException;
+import com.hypixel.hytale.server.core.entity.InteractionContext;
+import com.hypixel.hytale.server.core.entity.UUIDComponent;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.npc.NPCPlugin;
-import me.arkon.golemengine.component.AnchorMonitorComponent;
-import me.arkon.golemengine.component.AnchorStateComponent;
+import com.hypixel.hytale.server.npc.asset.builder.Builder;
+import com.hypixel.hytale.server.npc.asset.builder.BuilderInfo;
+import com.hypixel.hytale.server.npc.entities.NPCEntity;
+import com.hypixel.hytale.server.npc.role.Role;
+import com.hypixel.hytale.server.spawning.ISpawnableWithModel;
+import com.hypixel.hytale.server.spawning.SpawningContext;
+import it.unimi.dsi.fastutil.Pair;
+import me.arkon.golemengine.component.PlayerMonitorComponent;
+import me.arkon.golemengine.component.AnchorComponent;
 import me.arkon.golemengine.component.GolemActionComponent;
 import me.arkon.golemengine.interaction.GolemAnchorInteraction;
 import me.arkon.golemengine.interaction.GolemCrystalInteraction;
@@ -18,9 +34,11 @@ import me.arkon.golemengine.system.UseBlockSystem;
 
 public class GolemEngine extends JavaPlugin {
     public static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
+    public static GolemEngine INSTANCE;
 
     public GolemEngine(JavaPluginInit init) {
         super(init);
+        INSTANCE = this;
     }
 
     @Override
@@ -28,8 +46,8 @@ public class GolemEngine extends JavaPlugin {
         this.getCodecRegistry(Interaction.CODEC)
                 .register("UseGolemAnchor", GolemAnchorInteraction.class, GolemAnchorInteraction.CODEC);
 
-        AnchorStateComponent.TYPE = this.getChunkStoreRegistry().registerComponent(AnchorStateComponent.class, "GolemEngine_AnchorState", AnchorStateComponent.CODEC);
-        AnchorMonitorComponent.TYPE = this.getEntityStoreRegistry().registerComponent(AnchorMonitorComponent.class, "GolemEngine_AnchorMonitor", AnchorMonitorComponent.CODEC);
+        AnchorComponent.TYPE = this.getChunkStoreRegistry().registerComponent(AnchorComponent.class, "GolemEngine_AnchorState", AnchorComponent.CODEC);
+        PlayerMonitorComponent.TYPE = this.getEntityStoreRegistry().registerComponent(PlayerMonitorComponent.class, "GolemEngine_AnchorMonitor", PlayerMonitorComponent.CODEC);
         GolemActionComponent.TYPE = this.getEntityStoreRegistry().registerComponent(GolemActionComponent.class, "GolemEngine_GolemAction", GolemActionComponent.CODEC);
 
         this.getCodecRegistry(Interaction.CODEC).register("UseGolemCrystal", GolemCrystalInteraction.class, GolemCrystalInteraction.CODEC);
@@ -46,5 +64,54 @@ public class GolemEngine extends JavaPlugin {
         this.getEntityStoreRegistry().registerSystem(new BreakBlockSystem());
         this.getEntityStoreRegistry().registerSystem(new UseBlockSystem());
         this.getEntityStoreRegistry().registerSystem(new GolemExecutionSystem());
+    }
+
+
+    public static GolemEngine get() {
+        return INSTANCE;
+    }
+
+
+    public void spawnGolemAtAnchor(Store<EntityStore> store, AnchorComponent anchor, PlayerMonitorComponent monitor) {
+        NPCPlugin npcPlugin = NPCPlugin.get();
+
+        int roleBuilderIndex = npcPlugin.getIndex("Golem_Construct");
+        BuilderInfo roleInfo = npcPlugin.getRoleBuilderInfo(roleBuilderIndex);
+        if (roleInfo == null) {
+            GolemEngine.LOGGER.atSevere().log("Golem failed to spawn due to invalid role info fetch.");
+            return;
+        }
+        Builder<Role> roleBuilder = npcPlugin.tryGetCachedValidRole(roleInfo.getIndex());
+
+        if (!(roleBuilder instanceof ISpawnableWithModel spawnable) || !roleBuilder.isSpawnable()) {
+            throw new IllegalStateException("Golem role is not spawnable");
+        }
+
+        SpawningContext spawningContext = new SpawningContext();
+        if (!spawningContext.setSpawnable(spawnable)) {
+            throw new GeneralCommandException(Message.translation("server.commands.npc.spawn.cantSetRolebuilder"));
+        }
+
+        Vector3d position = new Vector3d(monitor.getAnchorLocation());
+        position.y += 0.5;
+
+        Pair<Ref<EntityStore>, NPCEntity> npcPair =
+                npcPlugin.spawnEntity(
+                        store,
+                        roleBuilderIndex,
+                        position,
+                        new Vector3f(),
+                        spawningContext.getModel(),
+                        null
+                );
+
+        assert npcPair != null;
+        Ref<EntityStore> golemRef = npcPair.first();
+
+        store.addComponent(golemRef, GolemActionComponent.getComponentType(), new GolemActionComponent(monitor.actions, monitor.getAnchorLocation()));
+        UUIDComponent uuid = store.getComponent(golemRef, UUIDComponent.getComponentType());
+        if (uuid == null) return;
+
+        anchor.golemUUID = uuid.getUuid();
     }
 }

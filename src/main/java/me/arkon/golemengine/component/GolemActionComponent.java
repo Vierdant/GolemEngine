@@ -1,55 +1,71 @@
 package me.arkon.golemengine.component;
 
+import com.hypixel.hytale.codec.Codec;
+import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
+import com.hypixel.hytale.codec.codecs.array.ArrayCodec;
 import com.hypixel.hytale.component.Component;
 import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.math.vector.Vector3d;
+import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import me.arkon.golemengine.action.GolemAction;
+import me.arkon.golemengine.action.GolemActionCodec;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class GolemActionComponent implements Component<EntityStore> {
     public static final BuilderCodec<GolemActionComponent> CODEC;
     public static ComponentType<EntityStore, GolemActionComponent> TYPE;
 
     public final ArrayList<GolemAction> actions;
+    public Vector3i anchorLocation;
     public int waitTicks;
     public int actionIndex;
     public int activeMoveIndex;
     public boolean moving;
     public Vector3d target;
-    public Vector3d direction;
 
     public GolemActionComponent() {
         this.actions = new ArrayList<>();
+        this.anchorLocation = Vector3i.ZERO;
         this.waitTicks = 0;
         this.activeMoveIndex = 0;
         this.actionIndex = 0;
         this.moving = false;
         this.target = new Vector3d();
-        this.direction = new Vector3d();
 
     }
 
     public GolemActionComponent(ArrayList<GolemAction> actions) {
         this.actions = actions;
+        this.anchorLocation = Vector3i.ZERO;
         this.waitTicks = 0;
         this.actionIndex = 0;
         this.activeMoveIndex = 0;
         this.moving = false;
         this.target = new Vector3d();
-        this.direction = new Vector3d();
     }
 
-    public GolemActionComponent(ArrayList<GolemAction> actions, int waitTicks, int actionIndex) {
+    public GolemActionComponent(ArrayList<GolemAction> actions, Vector3i anchorLocation) {
         this.actions = actions;
+        this.anchorLocation = anchorLocation;
+        this.waitTicks = 0;
+        this.actionIndex = 0;
+        this.activeMoveIndex = 0;
+        this.moving = false;
+        this.target = new Vector3d();
+    }
+
+    public GolemActionComponent(ArrayList<GolemAction> actions, Vector3i anchorLocation, int waitTicks, int actionIndex) {
+        this.actions = actions;
+        this.anchorLocation = anchorLocation;
         this.waitTicks = waitTicks;
         this.actionIndex = actionIndex;
         this.activeMoveIndex = 0;
         this.moving = false;
         this.target = new Vector3d();
-        this.direction = new Vector3d();
     }
 
     public static ComponentType<EntityStore, GolemActionComponent> getComponentType() {
@@ -62,11 +78,32 @@ public class GolemActionComponent implements Component<EntityStore> {
             super.clone();
         } catch (CloneNotSupportedException _) {}
 
-        return new GolemActionComponent(this.actions, this.waitTicks, this.actionIndex);
+        return new GolemActionComponent(this.actions, this.anchorLocation, this.waitTicks, this.actionIndex);
     }
 
 
     static {
-        CODEC = BuilderCodec.builder(GolemActionComponent.class, GolemActionComponent::new).build();
+        CODEC = BuilderCodec.builder(GolemActionComponent.class, GolemActionComponent::new)
+                .append(
+                        new KeyedCodec<>("Actions",
+                                new ArrayCodec<>(new GolemActionCodec(), GolemAction[]::new)
+                        ),
+                        (c, v) -> c.actions.addAll(List.of(v)),
+                        c -> c.actions.toArray(GolemAction[]::new)
+                )
+                .add()
+                .append(
+                        new KeyedCodec<>("AnchorLocation", Vector3i.CODEC),
+                        (c, v) -> c.anchorLocation = v,
+                        c -> c.anchorLocation
+                )
+                .add()
+                .append(
+                        new KeyedCodec<>("Index", Codec.INTEGER),
+                        (c, v) -> c.actionIndex = v,
+                        c -> c.actionIndex
+                )
+                .add()
+                .build();
     }
 }

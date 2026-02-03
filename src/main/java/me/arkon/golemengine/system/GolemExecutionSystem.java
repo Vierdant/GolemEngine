@@ -1,25 +1,23 @@
 package me.arkon.golemengine.system;
 
-import com.hypixel.hytale.component.ArchetypeChunk;
-import com.hypixel.hytale.component.CommandBuffer;
-import com.hypixel.hytale.component.Ref;
-import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.component.*;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.tick.EntityTickingSystem;
-import com.hypixel.hytale.math.vector.Vector3d;
-import com.hypixel.hytale.math.vector.Vector3f;
-import com.hypixel.hytale.protocol.MovementStates;
+import com.hypixel.hytale.math.util.ChunkUtil;
+import com.hypixel.hytale.math.vector.Vector3i;
+import com.hypixel.hytale.server.core.modules.block.BlockModule;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
+import com.hypixel.hytale.server.core.universe.world.World;
+import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
+import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-import com.hypixel.hytale.server.npc.NPCPlugin;
 import com.hypixel.hytale.server.npc.entities.NPCEntity;
-import com.hypixel.hytale.server.npc.movement.controllers.ProbeMoveData;
 import me.arkon.golemengine.GolemEngine;
 import me.arkon.golemengine.action.GolemAction;
 import me.arkon.golemengine.action.MoveAction;
 import me.arkon.golemengine.action.WaitAction;
+import me.arkon.golemengine.component.AnchorComponent;
 import me.arkon.golemengine.component.GolemActionComponent;
-import me.arkon.golemengine.util.ActionMovementState;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -43,34 +41,64 @@ public class GolemExecutionSystem extends EntityTickingSystem<EntityStore> {
         TransformComponent transform = store.getComponent(entityRef, TransformComponent.getComponentType());
         if (transform == null) return;
 
-        if (golem.actions.isEmpty()) return;
+        Vector3i anchorPos = golem.anchorLocation;
 
-        if (golem.waitTicks > 0) {
-            golem.waitTicks--;
-            return;
-        }
+        commandBuffer.run(entityStore -> {
 
-        if (golem.moving) {
-            return;
-        }
+            long chunkIndex = ChunkUtil.indexChunkFromBlock(anchorPos.x, anchorPos.z);
+            World world = store.getExternalData().getWorld();
+            WorldChunk chunk = world.getChunk(chunkIndex);
+            if (chunk == null) return;
 
-        GolemAction action = golem.actions.get(golem.actionIndex);
+            Ref<ChunkStore> chunkRef = chunk.getBlockComponentEntity(anchorPos.x, anchorPos.y, anchorPos.z);
+            if (chunkRef == null) {
+                chunkRef = BlockModule.ensureBlockEntity(chunk, anchorPos.x, anchorPos.y, anchorPos.z);
+                if (chunkRef == null) {
+                    entityStore.removeEntity(entityRef, RemoveReason.REMOVE);
+                    return;
+                }
+            }
 
-        if (action instanceof MoveAction(Vector3d location, Vector3d direction)) {
-            golem.moving = true;
-            golem.target = location;
-            golem.direction = direction;
-            return;
+            Store<ChunkStore> chunkStore = world.getChunkStore().getStore();
+            AnchorComponent anchor = chunkStore.getComponent(chunkRef, AnchorComponent.getComponentType());
 
-        } else if (action instanceof WaitAction(int ticks)) {
-            golem.waitTicks = ticks;
-        }
+            if (anchor == null) {
+                entityStore.removeEntity(entityRef, RemoveReason.REMOVE);
+                return;
+            };
 
-        golem.actionIndex++;
+            if (anchor.golemPaused) {
+                return;
+            }
 
-        if (golem.actionIndex >= golem.actions.size()) {
-            golem.actionIndex = 0;
-        }
+            if (golem.actions.isEmpty()) return;
+
+            if (golem.waitTicks > 0) {
+                golem.waitTicks--;
+                return;
+            }
+
+            if (golem.moving) {
+                return;
+            }
+
+            GolemAction action = golem.actions.get(golem.actionIndex);
+
+            if (action instanceof MoveAction moveAction) {
+                golem.moving = true;
+                golem.target = moveAction.getLocation();
+                return;
+
+            } else if (action instanceof WaitAction waitAction) {
+                golem.waitTicks = waitAction.getTicks();
+            }
+
+            golem.actionIndex++;
+
+            if (golem.actionIndex >= golem.actions.size()) {
+                golem.actionIndex = 0;
+            }
+        });
     }
 
     @Nullable

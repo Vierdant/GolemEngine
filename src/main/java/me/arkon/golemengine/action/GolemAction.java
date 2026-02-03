@@ -1,5 +1,5 @@
 package me.arkon.golemengine.action;
 
-public sealed interface GolemAction
-        permits MoveAction, WaitAction {
+public interface GolemAction {
+    public GolemActionTypes getType();
 }

@@ -10,23 +10,22 @@ import me.arkon.golemengine.action.GolemAction;
 
 import java.util.ArrayList;
 
-public class AnchorMonitorComponent implements Component<EntityStore> {
-    public static final BuilderCodec<AnchorMonitorComponent> CODEC;
-    public static ComponentType<EntityStore, AnchorMonitorComponent> TYPE;
+public class PlayerMonitorComponent implements Component<EntityStore> {
+    public static final BuilderCodec<PlayerMonitorComponent> CODEC;
+    public static ComponentType<EntityStore, PlayerMonitorComponent> TYPE;
 
     private final Vector3i anchorLocation;
     public final ArrayList<GolemAction> actions = new ArrayList<>();
     public int tick = 0;
     public int ticksSinceLastAction = 0;
     public Vector3d lastPosition;
-    public boolean wasMoving;
 
-    public AnchorMonitorComponent() {
+    public PlayerMonitorComponent() {
         this.anchorLocation = null;
     }
 
 
-    public AnchorMonitorComponent(Vector3i loc) {
+    public PlayerMonitorComponent(Vector3i loc) {
         this.anchorLocation = loc;
     }
 
@@ -36,8 +35,8 @@ public class AnchorMonitorComponent implements Component<EntityStore> {
     }
 
 
-    public static ComponentType<EntityStore, AnchorMonitorComponent> getComponentType() {
-        return AnchorMonitorComponent.TYPE;
+    public static ComponentType<EntityStore, PlayerMonitorComponent> getComponentType() {
+        return PlayerMonitorComponent.TYPE;
     }
 
 
@@ -50,6 +49,6 @@ public class AnchorMonitorComponent implements Component<EntityStore> {
     }
 
     static {
-        CODEC = BuilderCodec.builder(AnchorMonitorComponent.class, AnchorMonitorComponent::new).build();
+        CODEC = BuilderCodec.builder(PlayerMonitorComponent.class, PlayerMonitorComponent::new).build();
     }
 }

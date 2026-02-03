@@ -8,24 +8,28 @@ import com.hypixel.hytale.math.util.ChunkUtil;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.protocol.InteractionState;
 import com.hypixel.hytale.protocol.InteractionType;
+import com.hypixel.hytale.protocol.MovementStates;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.asset.type.item.config.Item;
 import com.hypixel.hytale.server.core.entity.InteractionContext;
 import com.hypixel.hytale.server.core.entity.entities.Player;
+import com.hypixel.hytale.server.core.entity.movement.MovementStatesComponent;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.inventory.transaction.ItemStackSlotTransaction;
 import com.hypixel.hytale.server.core.inventory.transaction.ItemStackTransaction;
 import com.hypixel.hytale.server.core.modules.block.BlockModule;
+import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.CooldownHandler;
 import com.hypixel.hytale.server.core.modules.interaction.interaction.config.client.SimpleBlockInteraction;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-import me.arkon.golemengine.component.AnchorMonitorComponent;
+import me.arkon.golemengine.component.GolemActionComponent;
+import me.arkon.golemengine.component.PlayerMonitorComponent;
 import me.arkon.golemengine.util.AnchorState;
 import me.arkon.golemengine.GolemEngine;
-import me.arkon.golemengine.component.AnchorStateComponent;
+import me.arkon.golemengine.component.AnchorComponent;
 import me.arkon.golemengine.util.AnchorUtil;
 import org.jetbrains.annotations.Nullable;
 
@@ -66,9 +70,9 @@ public class GolemAnchorInteraction extends SimpleBlockInteraction {
         }
 
         Store<ChunkStore> chunkStore = world.getChunkStore().getStore();
-        AnchorStateComponent anchorStateComponent = chunkStore.getComponent(chunkRef, AnchorStateComponent.getComponentType());
+        AnchorComponent anchorComponent = chunkStore.getComponent(chunkRef, AnchorComponent.getComponentType());
 
-        if (anchorStateComponent == null) {
+        if (anchorComponent == null) {
             GolemEngine.LOGGER.atInfo().log("BAD COMP");
             context.getState().state = InteractionState.Failed;
             return;
@@ -76,7 +80,7 @@ public class GolemAnchorInteraction extends SimpleBlockInteraction {
 
         Store<EntityStore> entityStore = context.getEntity().getStore();
 
-        if (anchorStateComponent.state == AnchorState.INACTIVE) {
+        if (anchorComponent.state == AnchorState.INACTIVE) {
             GolemEngine.LOGGER.atInfo().log("INACTIVE");
             if (itemInHand == null || !AnchorUtil.validateAnchorShard(itemInHand.getItemId())) {
                 context.getState().state = InteractionState.Failed;
@@ -92,12 +96,12 @@ public class GolemAnchorInteraction extends SimpleBlockInteraction {
                 }
             }
 
-            anchorStateComponent.state = AnchorState.CRYSTAL;
+            anchorComponent.state = AnchorState.CRYSTAL;
             GolemEngine.LOGGER.atInfo().log("SUCCESS - +CRYSTAL STATE");
             return;
         }
 
-        if (anchorStateComponent.state == AnchorState.CRYSTAL) {
+        if (anchorComponent.state == AnchorState.CRYSTAL) {
             Item item = Item.getAssetMap().getAsset("Tool_Golem_Crystal");
             if (item == null || context.getHeldItemContainer() == null) {
                 GolemEngine.LOGGER.atSevere().log("Something went wrong! Golem Crystal or player inventory entry was not found.");
@@ -123,17 +127,38 @@ public class GolemAnchorInteraction extends SimpleBlockInteraction {
                 }
 
                 player.sendMessage(Message.raw("YOO! YOU GOT THE BLOCKY CRYSTAL THING!"));
-                entityStore.removeComponentIfExists(player.getReference(), AnchorMonitorComponent.getComponentType());
-                entityStore.addComponent(player.getReference(), AnchorMonitorComponent.getComponentType(), new AnchorMonitorComponent(pos));
-                anchorStateComponent.state = AnchorState.MONITOR;
+                entityStore.removeComponentIfExists(player.getReference(), PlayerMonitorComponent.getComponentType());
+                entityStore.addComponent(player.getReference(), PlayerMonitorComponent.getComponentType(), new PlayerMonitorComponent(pos));
+                anchorComponent.state = AnchorState.MONITOR;
             });
             return;
         }
 
-        if (anchorStateComponent.state == AnchorState.ACTIVE) {
-            GolemEngine.LOGGER.atInfo().log("THIS IS ACTIVE!");
-            // toggle golem execution tick
-            // if crouched reset golem to anchor location
+        if (anchorComponent.state == AnchorState.ACTIVE) {
+            MovementStatesComponent movement = commandBuffer.getExternalData().getStore().getComponent(context.getEntity(), MovementStatesComponent.getComponentType());
+            if (movement != null && movement.getMovementStates().crouching) {
+                Ref<EntityStore> golemRef = world.getEntityRef(anchorComponent.golemUUID);
+                if (golemRef == null) {
+                    GolemEngine.LOGGER.atSevere().log("GOLEM REF IS NULL");
+                    context.getState().state = InteractionState.Failed;
+                    return;
+                }
+
+                GolemActionComponent golem = world.getEntityStore().getStore().getComponent(golemRef, GolemActionComponent.getComponentType());
+                TransformComponent transform = world.getEntityStore().getStore().getComponent(golemRef, TransformComponent.getComponentType());
+
+                if (golem == null || transform == null) {
+                    GolemEngine.LOGGER.atSevere().log("GOLEM COMP IS NULL");
+                    context.getState().state = InteractionState.Failed;
+                    return;
+                }
+
+                transform.teleportPosition(golem.anchorLocation.toVector3d());
+                golem.actionIndex = 0;
+                return;
+            }
+
+            anchorComponent.golemPaused = !anchorComponent.golemPaused;
         }
     }
 

@@ -11,7 +11,6 @@ import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.protocol.InteractionState;
 import com.hypixel.hytale.protocol.InteractionType;
 import com.hypixel.hytale.server.core.Message;
-import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.command.system.exceptions.GeneralCommandException;
 import com.hypixel.hytale.server.core.entity.InteractionContext;
 import com.hypixel.hytale.server.core.entity.entities.Player;
@@ -32,8 +31,8 @@ import com.hypixel.hytale.server.spawning.ISpawnableWithModel;
 import com.hypixel.hytale.server.spawning.SpawningContext;
 import it.unimi.dsi.fastutil.Pair;
 import me.arkon.golemengine.GolemEngine;
-import me.arkon.golemengine.component.AnchorMonitorComponent;
-import me.arkon.golemengine.component.AnchorStateComponent;
+import me.arkon.golemengine.component.PlayerMonitorComponent;
+import me.arkon.golemengine.component.AnchorComponent;
 import me.arkon.golemengine.component.GolemActionComponent;
 import me.arkon.golemengine.util.AnchorState;
 
@@ -76,7 +75,7 @@ public class GolemCrystalInteraction extends SimpleInstantInteraction {
             return;
         }
 
-        AnchorMonitorComponent monitor = store.getComponent(player.getReference(), AnchorMonitorComponent.getComponentType());
+        PlayerMonitorComponent monitor = store.getComponent(player.getReference(), PlayerMonitorComponent.getComponentType());
         if (monitor == null) {
             context.getState().state = InteractionState.Failed;
             GolemEngine.LOGGER.atInfo().log("Player interacted with Crystal while not being monitored");
@@ -103,16 +102,16 @@ public class GolemCrystalInteraction extends SimpleInstantInteraction {
         }
 
         Store<ChunkStore> chunkStore = world.getChunkStore().getStore();
-        AnchorStateComponent anchorState = chunkStore.getComponent(chunkRef, AnchorStateComponent.getComponentType());
+        AnchorComponent anchor = chunkStore.getComponent(chunkRef, AnchorComponent.getComponentType());
 
-        if (anchorState == null) {
+        if (anchor == null) {
             context.getState().state = InteractionState.Failed;
             GolemEngine.LOGGER.atInfo().log("Player interacted with Crystal while not anchor is gone");
             context.getHeldItemContainer().removeItemStackFromSlot(context.getHeldItemSlot(), context.getHeldItem(), 1);
             return;
         }
 
-        if (anchorState.state != AnchorState.MONITOR) {
+        if (anchor.state != AnchorState.MONITOR) {
             context.getState().state = InteractionState.Failed;
             GolemEngine.LOGGER.atInfo().log("Player interacted with Crystal while anchor is not monitoring");
             context.getHeldItemContainer().removeItemStackFromSlot(context.getHeldItemSlot(), context.getHeldItem(), 1);
@@ -122,50 +121,10 @@ public class GolemCrystalInteraction extends SimpleInstantInteraction {
         context.getHeldItemContainer().removeItemStackFromSlot(context.getHeldItemSlot(), context.getHeldItem(), 1);
 
         commandBuffer.run(entityStore -> {
-            spawnGolemAtAnchor(context, monitor);
-            store.removeComponent(player.getReference(), AnchorMonitorComponent.getComponentType());
-            anchorState.state = AnchorState.ACTIVE;
-            GolemEngine.LOGGER.atInfo().log("ACTIVATED!");
+            GolemEngine.get().spawnGolemAtAnchor(entityStore, anchor, monitor);
+            store.removeComponent(player.getReference(), PlayerMonitorComponent.getComponentType());
+            anchor.state = AnchorState.ACTIVE;
+            anchor.actions = monitor.actions;
         });
-    }
-
-    private void spawnGolemAtAnchor(InteractionContext context, AnchorMonitorComponent monitor) {
-        NPCPlugin npcPlugin = NPCPlugin.get();
-        Store<EntityStore> store = context.getEntity().getStore();
-
-        int roleBuilderIndex = npcPlugin.getIndex("Golem_Construct");
-        BuilderInfo roleInfo = npcPlugin.getRoleBuilderInfo(roleBuilderIndex);
-        if (roleInfo == null) {
-            GolemEngine.LOGGER.atSevere().log("Golem failed to spawn due to invalid role info fetch.");
-            return;
-        }
-        Builder<Role> roleBuilder = npcPlugin.tryGetCachedValidRole(roleInfo.getIndex());
-
-        if (!(roleBuilder instanceof ISpawnableWithModel spawnable) || !roleBuilder.isSpawnable()) {
-            throw new IllegalStateException("Golem role is not spawnable");
-        }
-
-        SpawningContext spawningContext = new SpawningContext();
-        if (!spawningContext.setSpawnable(spawnable)) {
-            throw new GeneralCommandException(Message.translation("server.commands.npc.spawn.cantSetRolebuilder"));
-        }
-
-        Vector3d position = new Vector3d(monitor.getAnchorLocation());
-        position.y += 0.5;
-
-        Pair<Ref<EntityStore>, NPCEntity> npcPair =
-                npcPlugin.spawnEntity(
-                        store,
-                        roleBuilderIndex,
-                        position,
-                        new Vector3f(),
-                        spawningContext.getModel(),
-                        null
-                );
-
-        assert npcPair != null;
-        Ref<EntityStore> golemRef = npcPair.first();
-
-        store.addComponent(golemRef, GolemActionComponent.getComponentType(), new GolemActionComponent(monitor.actions));
     }
 }

@@ -12,9 +12,8 @@ import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.movement.MovementStatesComponent;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-import me.arkon.golemengine.GolemEngine;
 import me.arkon.golemengine.action.MoveAction;
-import me.arkon.golemengine.component.AnchorMonitorComponent;
+import me.arkon.golemengine.component.PlayerMonitorComponent;
 import me.arkon.golemengine.util.ActionUtil;
 
 import javax.annotation.Nonnull;
@@ -33,7 +32,7 @@ public class AnchorMonitorSystem extends EntityTickingSystem<EntityStore> {
         Player player = store.getComponent(ref, Player.getComponentType());
         if (player == null || player.getReference() == null) return;
 
-        AnchorMonitorComponent monitor = store.getComponent(player.getReference(), AnchorMonitorComponent.getComponentType());
+        PlayerMonitorComponent monitor = store.getComponent(player.getReference(), PlayerMonitorComponent.getComponentType());
         if (monitor == null) return;
 
         int RECORD_INTERVAL = 3;
@@ -60,12 +59,12 @@ public class AnchorMonitorSystem extends EntityTickingSystem<EntityStore> {
 
         Vector3d location = currentPos.clone();
         MovementStates movement = movementStates.getMovementStates();
-        boolean isMoving = !movement.idle && !movement.horizontalIdle && !movement.sitting;
+        boolean isMoving = !movement.idle && !movement.horizontalIdle && !movement.sitting && !movement.flying;
 
 
         if (isMoving) {
             if (location.distanceSquaredTo(monitor.lastPosition) > MOVE_THRESHOLD_SQ) {
-                MoveAction moveAction = new MoveAction(new Vector3d(location), transform.getTransform().getDirection());
+                MoveAction moveAction = new MoveAction(new Vector3d(location));
                 monitor.actions.add(moveAction);
                 monitor.lastPosition.assign(location);
                 monitor.ticksSinceLastAction = 0;
@@ -79,6 +78,6 @@ public class AnchorMonitorSystem extends EntityTickingSystem<EntityStore> {
 
     @Nullable
     public Query<EntityStore> getQuery() {
-        return Query.and(Player.getComponentType(), AnchorMonitorComponent.getComponentType());
+        return Query.and(Player.getComponentType(), PlayerMonitorComponent.getComponentType());
     }
 }

@@ -173,9 +173,8 @@ public class BodyMotionGolem extends BodyMotionFind {
 
         GolemAction next = golem.actions.get(nextIndex);
 
-        if (next instanceof MoveAction(Vector3d location, Vector3d direction)) {
-            golem.target.assign(location);
-            golem.direction.assign(direction);
+        if (next instanceof MoveAction action) {
+            golem.target.assign(action.getLocation());
             golem.moving = true;
         } else {
             stopMoving(golem);
